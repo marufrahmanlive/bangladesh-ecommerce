@@ -67,4 +67,22 @@ describe("order status transitions", () => {
     expect(collected.ok).toBe(true);
     expect(collected.order!.paymentStatus).toBe("collected");
   });
+
+  it("does not double-collect a COD payment", () => {
+    localStorage.clear();
+    const repos: Repos = buildMemoryRepos();
+    const product = repos.products.getById("prod-face-wash")!;
+    const variant = product.variants[0];
+    const res = placeOrder(repos, {
+      customer: { fullName: "T", phone: "01712345678", district: "Dhaka", city: "X", address: "X" },
+      items: [item(product.id, variant.id, 1, variant.offerPriceMinor)],
+      deliveryMethod: "standard",
+      paymentMethod: "cod",
+      idempotencyKey: "double-collect-test",
+    });
+    markPaymentCollected(repos, res.order!.id);
+    const paymentsAfterFirst = repos.orders.getById(res.order!.id)!.payments.length;
+    markPaymentCollected(repos, res.order!.id);
+    expect(repos.orders.getById(res.order!.id)!.payments.length).toBe(paymentsAfterFirst);
+  });
 });

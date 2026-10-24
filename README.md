@@ -97,6 +97,13 @@ npm run test:e2e   # Playwright end-to-end tests
 npm run lint
 ```
 
+## Demo admin access
+
+The admin area at `/admin` is gated by a **demo login** (role + password). This
+is a client-side simulation only — it is **not** real authentication.
+
+- Password: `admin123` (shown on the login screen)
+
 ## Security note
 
 Do not use localStorage as an authoritative production database. Real customer

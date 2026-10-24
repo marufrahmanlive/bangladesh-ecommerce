@@ -86,6 +86,7 @@ export default function PurchasesPage() {
 
   const receive = (po: PurchaseOrder) => {
     if (!repos) return;
+    if (po.status === "received") return;
     let totalCost = 0;
     for (const item of po.items) {
       const remaining = item.quantity - item.receivedQuantity;
@@ -136,6 +137,7 @@ export default function PurchasesPage() {
         <Button
           onClick={() => {
             setSupplierId(suppliers[0]?.id ?? "");
+            setLines([emptyLine(products[0]?.id ?? "", products[0]?.variants[0]?.id ?? "")]);
             setOpen(true);
           }}
         >

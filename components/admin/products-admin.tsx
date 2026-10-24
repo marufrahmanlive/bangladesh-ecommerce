@@ -282,6 +282,7 @@ export function ProductsAdmin({ autoOpenNew = false }: { autoOpenNew?: boolean }
               <div>
                 <Label className="mb-1 block">Category</Label>
                 <Select value={form.categoryId} onChange={(e) => setForm({ ...form, categoryId: e.target.value })}>
+                  <option value="">Select category</option>
                   {categories.map((c) => (
                     <option key={c.id} value={c.id}>{c.name.en}</option>
                   ))}

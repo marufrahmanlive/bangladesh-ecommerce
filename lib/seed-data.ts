@@ -5,10 +5,12 @@ import type {
   Coupon,
   Customer,
   Expense,
+  InventoryMovement,
   LocalizedText,
   Order,
   Product,
   ProductVariant,
+  PurchaseOrder,
   Review,
   StoreSettings,
   Supplier,
@@ -931,6 +933,69 @@ export const seedOrders: Order[] = [
     isSample: true,
     createdAt: "2026-01-13T09:00:00.000Z",
     updatedAt: "2026-01-14T10:00:00.000Z",
+  },
+];
+
+export const seedInventoryMovements: InventoryMovement[] = [
+  ...seedProducts.flatMap((p) =>
+    p.variants.map((v) => ({
+      id: `mv-open-${v.id}`,
+      productId: p.id,
+      variantId: v.id,
+      type: "opening" as const,
+      quantityChange: v.stock,
+      reason: "Opening stock",
+      isSample: true,
+      createdAt: FIXED_NOW,
+      updatedAt: FIXED_NOW,
+    })),
+  ),
+  ...seedOrders.flatMap((o) =>
+    o.items.map((item) => ({
+      id: `mv-sale-${o.id}-${item.variantId}`,
+      productId: item.productId,
+      variantId: item.variantId,
+      type: "sale" as const,
+      quantityChange: -item.quantity,
+      reason: `Order ${o.orderNumber}`,
+      referenceType: "order",
+      referenceId: o.id,
+      isSample: true,
+      createdAt: o.createdAt,
+      updatedAt: o.createdAt,
+    })),
+  ),
+];
+
+export const seedPurchases: PurchaseOrder[] = [
+  {
+    id: "po-1001",
+    poNumber: "PO-1001",
+    supplierId: "sup-textile-bd",
+    items: [
+      {
+        productId: "prod-mens-shirt",
+        variantId: "v-shirt-blue-m",
+        sku: "MN-4002-BM",
+        name: "Men's Casual Shirt",
+        quantity: 50,
+        receivedQuantity: 50,
+        unitCostMinor: taka(600),
+      },
+      {
+        productId: "prod-face-wash",
+        variantId: "v-fw-150",
+        sku: "CS-6001-150",
+        name: "Herbal Face Wash",
+        quantity: 30,
+        receivedQuantity: 30,
+        unitCostMinor: taka(200),
+      },
+    ],
+    status: "received",
+    isSample: true,
+    createdAt: "2026-01-03T10:00:00.000Z",
+    updatedAt: "2026-01-03T10:00:00.000Z",
   },
 ];
 

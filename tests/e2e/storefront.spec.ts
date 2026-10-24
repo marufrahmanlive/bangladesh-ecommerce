@@ -37,15 +37,18 @@ test.describe("storefront main journey", () => {
     await page.getByLabel(/District/i).selectOption("Dhaka");
     await page.getByLabel(/City/i).fill("Dhanmondi");
     await page.getByLabel(/Full Address/i).fill("House 1, Road 2");
-    await page.getByRole("button", { name: "→" }).click(); // info -> delivery
-    await page.getByRole("button", { name: "→" }).click(); // delivery -> payment
-    await page.getByRole("button", { name: "→" }).click(); // payment -> review
+    await page.getByRole("button", { name: /Continue/ }).click(); // info -> delivery
+    await page.getByRole("button", { name: /Continue/ }).click(); // delivery -> payment
+    await page.getByRole("button", { name: /Continue/ }).click(); // payment -> review
     await page.getByRole("button", { name: /Place Order/i }).click();
 
     // 8. Order confirmation.
     await expect(page.getByText(/Order Number/i)).toBeVisible();
 
-    // 9. Open admin and verify the order is listed.
+    // 9. Open admin (password protected) and verify the order is listed.
+    await page.goto("/admin");
+    await page.getByLabel(/Password/i).fill("admin123");
+    await page.getByRole("button", { name: /Sign in/i }).click();
     await page.goto("/admin/orders");
     await expect(page.getByText(/Playwright User/i).first()).toBeVisible();
   });

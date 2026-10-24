@@ -92,6 +92,7 @@ export function markPaymentCollected(
 ): OrderResult {
   const order = repos.orders.getById(orderId);
   if (!order) return { ok: false, error: "order-not-found" };
+  if (order.paymentStatus === "collected") return { ok: true, order };
   order.paymentStatus = "collected";
   order.payments.push({
     id: `pay_${nowIso()}`,

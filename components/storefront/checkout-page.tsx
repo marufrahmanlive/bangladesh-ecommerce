@@ -3,6 +3,7 @@
 import { useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
+import { Check, CreditCard, Lock, MapPin, Smartphone, Truck, User, Wallet } from "lucide-react";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm, useWatch } from "react-hook-form";
 import { z } from "zod";
@@ -35,8 +36,8 @@ const checkoutSchema = z.object({
 
 type CheckoutForm = z.infer<typeof checkoutSchema>;
 
-const STEPS = ["cart", "info", "delivery", "payment", "review"] as const;
-type Step = (typeof STEPS)[number];
+const STEP_ORDER = ["info", "delivery", "payment", "review"] as const;
+type Step = (typeof STEP_ORDER)[number];
 
 export function CheckoutPage() {
   const { locale, t: tr } = useI18n();
@@ -140,45 +141,55 @@ export function CheckoutPage() {
     return message ? tr(`checkout.${message}`) : undefined;
   };
 
-  const stepIndex = STEPS.indexOf(step);
+  const stepIndex = STEP_ORDER.indexOf(step);
+  const stepLabels = [
+    tr("checkout.customerInfo"),
+    tr("checkout.deliveryMethod"),
+    tr("checkout.paymentMethod"),
+    tr("checkout.orderReview"),
+  ];
 
   return (
-    <div className="mx-auto max-w-5xl px-4 py-8">
-      <h1 className="mb-6 text-2xl font-bold">{tr("checkout.title")}</h1>
+    <div className="mx-auto max-w-6xl px-4 py-8">
+      <h1 className="mb-8 text-3xl font-bold tracking-tight">{tr("checkout.title")}</h1>
 
-      <ol className="mb-8 flex flex-wrap items-center gap-2 text-sm">
-        {(["info", "delivery", "payment", "review"] as Step[]).map((s, i) => (
-          <li key={s} className="flex items-center gap-2">
-            <span
-              className={cn(
-                "flex h-6 w-6 items-center justify-center rounded-full text-xs font-medium",
-                stepIndex === i ? "bg-primary text-primary-foreground" : "bg-muted",
+      <ol className="mb-10 flex items-center">
+        {stepLabels.map((label, i) => {
+          const done = i < stepIndex;
+          const current = i === stepIndex;
+          return (
+            <li key={label} className={cn("flex items-center", i < stepLabels.length - 1 && "flex-1")}>
+              <div className="flex items-center gap-2">
+                <span
+                  className={cn(
+                    "flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-sm font-semibold",
+                    done || current
+                      ? "bg-primary text-primary-foreground"
+                      : "bg-muted text-muted-foreground",
+                    current && "ring-4 ring-primary/20",
+                  )}
+                >
+                  {done ? <Check className="h-4 w-4" /> : i + 1}
+                </span>
+                <span className={cn("hidden text-sm sm:block", current ? "font-semibold" : "text-muted-foreground")}>
+                  {label}
+                </span>
+              </div>
+              {i < stepLabels.length - 1 && (
+                <span className={cn("mx-3 h-0.5 flex-1 rounded", i < stepIndex ? "bg-primary" : "bg-muted")} />
               )}
-            >
-              {i + 1}
-            </span>
-            <span className={stepIndex === i ? "font-medium" : "text-muted-foreground"}>
-              {tr(
-                `checkout.${
-                  s === "info"
-                    ? "customerInfo"
-                    : s === "delivery"
-                      ? "deliveryMethod"
-                      : s === "payment"
-                        ? "paymentMethod"
-                        : "orderReview"
-                }`,
-              )}
-            </span>
-            {i < 3 && <span className="text-muted-foreground">›</span>}
-          </li>
-        ))}
+            </li>
+          );
+        })}
       </ol>
 
-      <div className="grid gap-8 lg:grid-cols-[1fr_320px]">
+      <div className="grid gap-8 lg:grid-cols-[1fr_380px]">
         <div>
           {step === "info" && (
-            <div className="space-y-4 rounded-lg border p-4">
+            <div className="space-y-4 rounded-lg border p-5">
+              <h2 className="flex items-center gap-2 text-lg font-semibold">
+                <User className="h-5 w-5 text-primary" /> {tr("checkout.customerInfo")}
+              </h2>
               <div className="grid gap-4 sm:grid-cols-2">
                 <div>
                   <Label htmlFor="fullName" className="mb-1 block">{tr("checkout.fullName")}</Label>
@@ -230,17 +241,27 @@ export function CheckoutPage() {
                 <label
                   key={m}
                   className={cn(
-                    "flex items-center gap-3 rounded-lg border p-4",
-                    deliveryMethod === m ? "border-primary bg-accent" : "",
+                    "flex cursor-pointer items-center gap-4 rounded-lg border p-4 transition-colors",
+                    deliveryMethod === m ? "border-primary bg-accent" : "hover:border-primary/50",
                   )}
                 >
                   <input
                     type="radio"
                     name="delivery"
+                    className="h-4 w-4 accent-[#0f766e]"
                     checked={deliveryMethod === m}
                     onChange={() => setDeliveryMethod(m)}
                   />
-                  <span className="font-medium">{tr(`checkout.${m}`)}</span>
+                  <Truck className="h-6 w-6 shrink-0 text-primary" />
+                  <span className="flex-1">
+                    <span className="block font-medium">{tr(`checkout.${m}`)}</span>
+                    <span className="block text-xs text-muted-foreground">
+                      {m === "standard" ? "2–5 working days" : "1–2 working days"}
+                    </span>
+                  </span>
+                  <span className="font-semibold">
+                    {shipping === 0 ? tr("common.free") : formatMoney(shipping, locale)}
+                  </span>
                 </label>
               ))}
             </div>
@@ -248,56 +269,76 @@ export function CheckoutPage() {
 
           {step === "payment" && (
             <div className="space-y-3">
-              {(["cod", "bkash", "nagad", "card"] as PaymentMethod[]).map((m) => (
+              {([
+                { m: "cod", icon: Wallet, desc: "Pay in cash when your order is delivered." },
+                { m: "bkash", icon: Smartphone, desc: "Pay with bKash (sandbox)." },
+                { m: "nagad", icon: Smartphone, desc: "Pay with Nagad (sandbox)." },
+                { m: "card", icon: CreditCard, desc: "Debit / credit / prepaid card (sandbox)." },
+              ] as { m: PaymentMethod; icon: typeof Wallet; desc: string }[]).map((opt) => (
                 <label
-                  key={m}
+                  key={opt.m}
                   className={cn(
-                    "flex items-center gap-3 rounded-lg border p-4",
-                    paymentMethod === m ? "border-primary bg-accent" : "",
+                    "flex cursor-pointer items-center gap-4 rounded-lg border p-4 transition-colors",
+                    paymentMethod === opt.m ? "border-primary bg-accent" : "hover:border-primary/50",
                   )}
                 >
                   <input
                     type="radio"
                     name="payment"
-                    checked={paymentMethod === m}
-                    onChange={() => setPaymentMethod(m)}
+                    className="h-4 w-4 accent-[#0f766e]"
+                    checked={paymentMethod === opt.m}
+                    onChange={() => setPaymentMethod(opt.m)}
                   />
-                  <span className="font-medium">{tr(`checkout.${m}`)}</span>
+                  <opt.icon className="h-6 w-6 shrink-0 text-primary" />
+                  <span className="flex-1">
+                    <span className="block font-medium">{tr(`checkout.${opt.m}`)}</span>
+                    <span className="block text-xs text-muted-foreground">{opt.desc}</span>
+                  </span>
                 </label>
               ))}
               {paymentMethod !== "cod" && (
-                <p className="rounded-md bg-warning/15 p-3 text-xs text-warning">
-                  Demo/sandbox — live payments off.
+                <p className="flex items-center gap-2 rounded-md bg-warning/15 p-3 text-xs text-warning">
+                  <Lock className="h-4 w-4" /> Demo/sandbox — live payments are not enabled.
                 </p>
               )}
             </div>
           )}
 
           {step === "review" && (
-            <div className="space-y-3 rounded-lg border p-4 text-sm">
-              <p>
-                <span className="font-medium">{tr("checkout.customerInfo")}:</span>{" "}
-                {form.getValues().fullName} · {form.getValues().phone}
-              </p>
-              <p>
-                <span className="font-medium">{tr("checkout.deliveryAddress")}:</span>{" "}
-                {form.getValues().address}, {form.getValues().city},{" "}
-                {form.getValues().district}
-              </p>
-              <p>
-                <span className="font-medium">{tr("checkout.deliveryMethod")}:</span>{" "}
-                {tr(`checkout.${deliveryMethod}`)}
-              </p>
-              <p>
-                <span className="font-medium">{tr("checkout.paymentMethod")}:</span>{" "}
-                {tr(`checkout.${paymentMethod}`)}
-              </p>
+            <div className="space-y-4 rounded-lg border p-5 text-sm">
+              <h2 className="text-lg font-semibold">{tr("checkout.orderReview")}</h2>
+              <div className="grid gap-4 sm:grid-cols-2">
+                <div className="flex items-start gap-2">
+                  <User className="mt-0.5 h-4 w-4 text-primary" />
+                  <div>
+                    <p className="font-medium">{form.getValues().fullName}</p>
+                    <p className="text-muted-foreground">{form.getValues().phone}</p>
+                  </div>
+                </div>
+                <div className="flex items-start gap-2">
+                  <MapPin className="mt-0.5 h-4 w-4 text-primary" />
+                  <p className="text-muted-foreground">
+                    {form.getValues().address}, {form.getValues().city},{" "}
+                    {form.getValues().district}
+                  </p>
+                </div>
+                <div className="flex items-center gap-2">
+                  <Truck className="h-4 w-4 text-primary" />
+                  <span>{tr(`checkout.${deliveryMethod}`)}</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <Wallet className="h-4 w-4 text-primary" />
+                  <span>{tr(`checkout.${paymentMethod}`)}</span>
+                </div>
+              </div>
             </div>
           )}
         </div>
 
-        <aside className="h-fit space-y-4 rounded-lg border p-4">
-          <h2 className="font-semibold">{tr("cart.title")}</h2>
+        <aside className="h-fit space-y-4 rounded-lg border p-5 lg:sticky lg:top-24">
+          <h2 className="flex items-center gap-2 font-semibold">
+            <Lock className="h-4 w-4 text-primary" /> {tr("cart.title")}
+          </h2>
           <div className="max-h-60 space-y-2 overflow-auto">
             {items.map((item) => (
               <div key={item.id} className="flex items-center gap-2 text-sm">
@@ -348,29 +389,28 @@ export function CheckoutPage() {
             </div>
           )}
 
-          <div className="flex justify-between gap-2">
-            {step !== "info" ? (
-              <Button variant="outline" onClick={() => setStep(STEPS[stepIndex - 1])}>
-                ←
-              </Button>
-            ) : (
-              <span />
-            )}
+          <div className="space-y-2">
             {step !== "review" ? (
               <Button
+                className="w-full"
                 onClick={() => {
                   if (step === "info") {
                     form.handleSubmit(() => setStep("delivery"))();
                   } else {
-                    setStep(STEPS[stepIndex + 1]);
+                    setStep(STEP_ORDER[stepIndex + 1]);
                   }
                 }}
               >
-                →
+                Continue →
               </Button>
             ) : (
-              <Button onClick={submit} disabled={placing}>
+              <Button className="w-full" onClick={submit} disabled={placing}>
                 {placing ? tr("checkout.placing") : tr("checkout.placeOrder")}
+              </Button>
+            )}
+            {step !== "info" && (
+              <Button variant="ghost" className="w-full" onClick={() => setStep(STEP_ORDER[stepIndex - 1])}>
+                ← Back
               </Button>
             )}
           </div>

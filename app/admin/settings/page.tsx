@@ -96,9 +96,9 @@ export default function SettingsPage() {
         <CardHeader><CardTitle className="text-sm">Store Information</CardTitle></CardHeader>
         <CardContent>
           <form onSubmit={save} className="space-y-3">
-            <div><Label className="mb-1 block">Store Name</Label><Input value={name} onChange={(e) => setName(e.target.value)} /></div>
-            <div><Label className="mb-1 block">Phone</Label><Input value={phone} onChange={(e) => setPhone(e.target.value)} /></div>
-            <div><Label className="mb-1 block">Email</Label><Input type="email" value={email} onChange={(e) => setEmail(e.target.value)} /></div>
+            <div><Label className="mb-1 block">Store Name</Label><Input value={name || settings.storeName.en} onChange={(e) => setName(e.target.value)} /></div>
+            <div><Label className="mb-1 block">Phone</Label><Input value={phone || settings.phone} onChange={(e) => setPhone(e.target.value)} /></div>
+            <div><Label className="mb-1 block">Email</Label><Input type="email" value={email || settings.email} onChange={(e) => setEmail(e.target.value)} /></div>
             <Button type="submit">{t("common.save")}</Button>
           </form>
         </CardContent>

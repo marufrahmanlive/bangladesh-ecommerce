@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import {
   BarChart3,
   BookOpen,
@@ -13,11 +13,13 @@ import {
   FileText,
   FolderTree,
   LayoutDashboard,
+  Lock,
   LogOut,
   Menu,
   Package,
   Receipt,
   Settings,
+  ShieldCheck,
   ShoppingCart,
   Star,
   Ticket,
@@ -27,11 +29,12 @@ import {
 } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 import { useI18n } from "@/features/i18n";
-import { useAuthStore, DEMO_USERS } from "@/features/auth/store";
+import { useAuthStore, DEMO_USERS, DEMO_ADMIN_PASSWORD } from "@/features/auth/store";
 import type { Role } from "@/types";
 import { LanguageSwitcher } from "@/components/storefront/language-switcher";
 import { Button } from "@/components/ui/button";
-import { Select } from "@/components/ui/input";
+import { Input, Select } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import { cn } from "@/lib/utils";
 
 interface NavItem {
@@ -63,9 +66,67 @@ const NAV: NavItem[] = [
 export function AdminShell({ children }: { children: React.ReactNode }) {
   const { t } = useI18n();
   const pathname = usePathname();
+  const router = useRouter();
   const user = useAuthStore((s) => s.user);
-  const login = useAuthStore((s) => s.login);
+  const authenticated = useAuthStore((s) => s.authenticated);
+  const hydrated = useAuthStore((s) => s.hydrated);
+  const logout = useAuthStore((s) => s.logout);
+  const switchRole = useAuthStore((s) => s.switchRole);
   const [menuOpen, setMenuOpen] = useState(false);
+  const [password, setPassword] = useState("");
+  const [role, setRole] = useState<Role>("administrator");
+  const [error, setError] = useState(false);
+
+  const handleLogin = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!useAuthStore.getState().login(role, password)) setError(true);
+  };
+
+  if (!hydrated) return <div className="min-h-screen" />;
+
+  if (!authenticated) {
+    return (
+      <div className="flex min-h-screen flex-col items-center justify-center bg-muted/30 p-4">
+        <div className="w-full max-w-sm rounded-lg border bg-card p-6 shadow-sm">
+          <div className="mb-6 text-center">
+            <ShieldCheck className="mx-auto h-10 w-10 text-primary" />
+            <h1 className="mt-2 text-xl font-bold">Admin Login</h1>
+            <p className="mt-1 text-xs text-muted-foreground">{t("admin.demoLoginNotice")}</p>
+          </div>
+          <form onSubmit={handleLogin} className="space-y-3">
+            <div>
+              <Label htmlFor="role" className="mb-1 block">Role</Label>
+              <Select id="role" value={role} onChange={(e) => setRole(e.target.value as Role)}>
+                {DEMO_USERS.map((u) => (
+                  <option key={u.id} value={u.role}>{u.name}</option>
+                ))}
+              </Select>
+            </div>
+            <div>
+              <Label htmlFor="password" className="mb-1 block">Password</Label>
+              <Input
+                id="password"
+                type="password"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                placeholder="••••••••"
+              />
+              {error && <p className="mt-1 text-xs text-destructive">Incorrect password</p>}
+            </div>
+            <Button type="submit" className="w-full">
+              <Lock className="h-4 w-4" /> Sign in
+            </Button>
+          </form>
+          <p className="mt-4 rounded-md bg-accent p-2 text-center text-xs text-muted-foreground">
+            Demo password: <span className="font-mono font-semibold">{DEMO_ADMIN_PASSWORD}</span>
+          </p>
+          <Link href="/" className="mt-3 block text-center text-sm text-primary hover:underline">
+            ← Back to store
+          </Link>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="flex min-h-screen flex-col">
@@ -100,7 +161,7 @@ export function AdminShell({ children }: { children: React.ReactNode }) {
             <label className="mb-1 block text-xs font-medium">{t("admin.overview")}</label>
             <Select
               value={user?.role ?? ""}
-              onChange={(e) => login(e.target.value as Role)}
+              onChange={(e) => switchRole(e.target.value as Role)}
             >
               {DEMO_USERS.map((u) => (
                 <option key={u.id} value={u.role}>
@@ -141,10 +202,16 @@ export function AdminShell({ children }: { children: React.ReactNode }) {
           </nav>
 
           <div className="mt-4 border-t pt-4">
-            <Link href="/" className="flex items-center gap-2 px-3 py-2 text-sm hover:bg-accent">
+            <button
+              onClick={() => {
+                logout();
+                router.push("/");
+              }}
+              className="flex w-full items-center gap-2 rounded-md px-3 py-2 text-sm hover:bg-accent"
+            >
               <LogOut className="h-4 w-4" />
               {t("admin.logout")}
-            </Link>
+            </button>
             <div className="mt-2 px-3">
               <LanguageSwitcher />
             </div>
