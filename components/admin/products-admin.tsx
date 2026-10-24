@@ -41,14 +41,12 @@ const emptyForm = (categoryId: string): FormState => ({
   stock: "10",
 });
 
-export function ProductsAdmin({ autoOpenNew = false }: { autoOpenNew?: boolean }) {
+export function ProductsAdmin() {
   const { locale, t: tr } = useI18n();
   const { products, categories, repos, refresh } = useCatalog();
   const addToast = useUiStore((s) => s.addToast);
   const [query, setQuery] = useState("");
-  const [form, setForm] = useState<FormState | null>(
-    autoOpenNew ? emptyForm(categories[0]?.id ?? "") : null,
-  );
+  const [form, setForm] = useState<FormState | null>(null);
   const [deleteId, setDeleteId] = useState<string | null>(null);
 
   const filtered = products.filter(

@@ -1,8 +1,5 @@
-import type { Metadata } from "next";
-import { ProductsAdmin } from "@/components/admin/products-admin";
-
-export const metadata: Metadata = { title: "New Product" };
+import { redirect } from "next/navigation";
 
 export default function Page() {
-  return <ProductsAdmin autoOpenNew />;
+  redirect("/admin/products");
 }
